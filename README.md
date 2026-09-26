@@ -130,7 +130,7 @@ Hamma kod `mobile/lib/` ichida:
 
 ## Ishga tushirish
 
-Kerak bo'ladi: Node.js 24 yoki yangiroq, PostgreSQL, mobil uchun Flutter.
+Kerak bo'ladi: Node.js, PostgreSQL, mobil uchun Flutter.
 
 **1. Backend**
 
