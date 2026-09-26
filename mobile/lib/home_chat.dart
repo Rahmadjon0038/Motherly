@@ -18,6 +18,7 @@ class ChatHome extends StatefulWidget {
 
 class _ChatHomeState extends State<ChatHome> {
   int _seg = 0;
+  int _aiVersion = 0; // AI suhbati topilmasa qayta ochiladi
   int _listVersion = 0; // "Mening mutaxassisim" ochilganda ro'yxat (o'qilmagan xabarlar) yangilanadi
 
   @override
@@ -93,9 +94,11 @@ class _ChatHomeState extends State<ChatHome> {
           Expanded(
             child: IndexedStack(index: _seg, children: [
               LoadView<int>(
+                key: ValueKey(_aiVersion),
                 load: () async => (await Api.I.get('/chat/ai'))['conversationId'] as int,
                 builder: (_, id, _) => ChatView(
                   conversationId: id,
+                  onMissing: () => setState(() => _aiVersion++),
                   ai: true,
                   allowAttach: true,
                   hint: 'Bolangiz haqida yozing…',

@@ -32,6 +32,7 @@ class ChatView extends StatefulWidget {
     this.showEmoji = false,
     this.footerBuilder,
     this.onPeerStatus,
+    this.onMissing,
   });
 
   final int conversationId;
@@ -42,6 +43,9 @@ class ChatView extends StatefulWidget {
   final bool showEmoji;
   final Widget Function(BuildContext context, Future<void> Function(String text) send)? footerBuilder;
   final void Function(String status)? onPeerStatus;
+
+  /// Suhbat serverda topilmasa (akkaunt almashgan) chaqiriladi: yangi suhbat ochiladi, xato ko'rsatilmaydi.
+  final VoidCallback? onMissing;
 
   @override
   State<ChatView> createState() => _ChatViewState();
@@ -98,7 +102,13 @@ class _ChatViewState extends State<ChatView> {
       setState(() => _msgs.addAll(list.cast<Map<String, dynamic>>()));
       _scrollDown();
     } catch (e) {
-      if (mounted) setState(() => _error = errorText(e));
+      if (!mounted) return;
+      if (e is ApiException && e.status == 404 && widget.onMissing != null) {
+        _poll?.cancel();
+        widget.onMissing!();
+        return;
+      }
+      setState(() => _error = errorText(e));
     }
   }
 
