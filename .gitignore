@@ -1,0 +1,25 @@
+.DS_Store
+node_modules/
+.env
+.env.*
+!.env.example
+*.log
+
+# backend: yuklangan fayllar va maxfiy kalitlar (admin parol, shifrlash kaliti)
+backend/uploads/*
+!backend/uploads/.gitkeep
+backend/private/
+
+# web
+web/.next/
+web/out/
+*.tsbuildinfo
+
+# mobile
+mobile/build/
+mobile/.dart_tool/
+mobile/android/local.properties
+mobile/android/.gradle/
+mobile/ios/Pods/
+mobile/ios/Flutter/ephemeral/
+mobile/macos/Pods/

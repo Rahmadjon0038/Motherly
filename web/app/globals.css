@@ -1,0 +1,52 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-brand: #2f7df6;
+  --color-brand-dark: #2b78f0;
+  --color-brand-light: #e6f0ff;
+  --color-ink: #14213d;
+  --color-muted: #6b7a90;
+  --color-line: #dce6f5;
+  --color-surface: #f6f9ff;
+  --font-sans: var(--font-geist-sans);
+}
+
+body {
+  background: var(--color-surface);
+  color: var(--color-ink);
+}
+
+/* Yuklanish belgisi (components/Spinner.tsx): har bir chiziq navbat bilan so'nadi. */
+@keyframes spinner-fade {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.15;
+  }
+}
+
+.spinner-spoke {
+  animation: spinner-fade 1s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner-spoke {
+    animation-duration: 2.4s;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-md bg-brand px-4 py-2.5 text-sm font-bold text-white hover:bg-brand-dark disabled:opacity-50;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-md border border-line bg-white px-4 py-2.5 text-sm font-bold text-ink hover:bg-brand-light disabled:opacity-50;
+  }
+  .chip {
+    @apply rounded-md border-[1.4px] border-line bg-white px-4 py-2 text-sm font-bold text-brand hover:bg-brand-light;
+  }
+  .input {
+    @apply w-full rounded-md border-[1.4px] border-line bg-white px-4 py-3 outline-none focus:border-brand;
+  }
+}
