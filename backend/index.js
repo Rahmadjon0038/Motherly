@@ -346,7 +346,11 @@ app.get("/api/consultants", auth, async (req, res) => {
   });
   const hires = await Hire.findAll({ where: { userId: req.user.id } });
   const hired = new Set(hires.map((h) => h.doctorProfileId));
-  res.json(list.map((d) => ({ ...consultantJson(d), hired: hired.has(d.id) })));
+  const convs = await Conversation.findAll({ where: { kind: "nurse", userId: req.user.id } });
+  res.json(list.map((d) => ({
+    ...consultantJson(d), hired: hired.has(d.id),
+    conversationId: hired.has(d.id) ? convs.find((c) => c.peerId === d.userId)?.id ?? null : null,
+  })));
 });
 
 // Hamshira: qaysi klinikalar qo'shgan va har biri uchun e'loni.

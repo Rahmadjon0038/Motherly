@@ -114,10 +114,17 @@ class _ConsultantsTab extends StatelessWidget {
                   if ((d['about'] as String).isNotEmpty) ...[const SizedBox(height: 10), Text(d['about'] as String)],
                   const SizedBox(height: 12),
                   GradientButton(
-                    label: hired ? 'Yollangan' : 'Maslahat olish · ${som(d['price'] as int)} so\'m',
-                    icon: hired ? Icons.check : null,
+                    label: hired ? 'Suhbatlashish' : 'Maslahat olish · ${som(d['price'] as int)} so\'m',
+                    icon: hired ? Icons.chat_bubble_outline : null,
                     onPressed: hired
-                        ? null
+                        ? () async {
+                            final id = d['conversationId'] as int?;
+                            if (id == null) return reload();
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => ChatPage(title: d['name'] as String, conversationId: id, subtitle: d['field'] as String?)),
+                            );
+                          }
                         : () async {
                             if (!await ensureRegistered(context, why: 'To\'lov qilish uchun')) return;
                             if (!context.mounted) return;
