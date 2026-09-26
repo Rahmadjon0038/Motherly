@@ -128,7 +128,38 @@ Hamma kod `mobile/lib/` ichida:
 
 **Video darslar.** Video fayl yoki YouTube havola ko'rinishida yuklanadi. Admin qo'ygan darslar hammaga bepul. Pullik darsni faqat mutaxassis qo'ya oladi va narxini o'zi belgilaydi. Ona sotib olmaguncha video havolasi ilovaga umuman yuborilmaydi.
 
-## Ishga tushirish
+## Docker bilan ishga tushirish (tavsiya etiladi)
+
+Eng oson yo'l: bitta buyruq.
+
+```bash
+./deploy.sh
+```
+
+Birinchi marta ishga tushganda skript o'zi `.env` faylini yaratadi (baza paroli va maxfiy kalitni tasodifiy qo'yadi), Gemini kalitini va server manzilini so'raydi, so'ng uchta konteynerni yig'ib ko'taradi. Tugagach veb-panel, backend manzili va admin login-parolini ko'rsatadi.
+
+- Veb-panel: `http://localhost:3000`
+- Backend: `http://localhost:5100`
+- To'xtatish: `./deploy.sh stop` (baza va yuklangan fayllar saqlanib qoladi)
+- Loglarni ko'rish: `./deploy.sh logs`
+- Kodni yangilagach yana `./deploy.sh` desangiz bo'ldi, faqat o'zgargan qism qayta yig'iladi
+
+Serverda ishlatsangiz, `.env` dagi `PUBLIC_API_URL` ga server IP yoki domenini yozing (masalan `http://203.0.113.5:5100`). Veb-panel va telefon backendga shu manzil orqali murojaat qiladi. Manzil o'zgargach `./deploy.sh` ni qayta ishga tushiring.
+
+**Nega Docker?**
+
+- **Hamma joyda bir xil ishlaydi.** "Menda ishlayapti, sizda ishlamayapti" degan gap qolmaydi. Node versiyasi, PostgreSQL o'rnatish va sozlash haqida o'ylash shart emas.
+- **Bir buyruq yetadi.** Yangi serverda faqat Docker o'rnatiladi, qolganini `./deploy.sh` qiladi. Baza, backend va veb-panel avtomatik ko'tariladi va bir-biriga ulanadi.
+- **Har qism alohida.** Backend, veb-panel va baza har biri o'z konteynerida ishlaydi. Biri qulab tushsa, qolganiga tegmaydi va o'zi qayta ishga tushadi. Bittasini alohida yangilash yoki qayta ishga tushirish mumkin.
+- **Ma'lumotlar xavfsiz.** Baza, yuklangan rasm/videolar va maxfiy kalitlar konteynerdan tashqarida (volume) saqlanadi. Konteynerni o'chirib qayta yig'sangiz ham hech narsa yo'qolmaydi.
+- **Kompyuter toza qoladi.** Node, PostgreSQL va boshqa narsalarni tizimga o'rnatish shart emas, hammasi konteyner ichida.
+- **Serverga chiqarish oson.** Kompyuterda sinalgan narsaning o'zi serverda ham xuddi shunday ishlaydi.
+
+Tuzilishi: `docker-compose.yml` uchta xizmatni tavsiflaydi (`db`, `backend`, `web`), `backend/Dockerfile` va `web/Dockerfile` esa har birini qanday yig'ishni aytadi.
+
+## Docker'siz, qo'lda ishga tushirish
+
+Dasturlash paytida kodni tez o'zgartirib ko'rish uchun qulay.
 
 Kerak bo'ladi: Node.js, PostgreSQL, mobil uchun Flutter.
 
@@ -162,4 +193,4 @@ flutter pub get
 flutter run
 ```
 
-`.env`, `backend/private/` (admin paroli va shifrlash kaliti) va `backend/uploads/` (yuklangan fayllar) GitHub'ga yuklanmaydi, shuning uchun yangi kompyuterda `.env` ni o'zingiz yaratasiz.
+`.env`, `backend/private/` (admin paroli va shifrlash kaliti) va `backend/uploads/` (yuklangan fayllar) GitHub'ga yuklanmaydi, shuning uchun yangi kompyuterda `.env` ni o'zingiz yaratasiz (Docker ishlatsangiz `./deploy.sh` buni o'zi qiladi).
