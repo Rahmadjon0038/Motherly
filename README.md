@@ -193,4 +193,15 @@ flutter pub get
 flutter run
 ```
 
+## Demo ma'lumotlar
+
+Platforma real ishlayotgandek ko'rinishi uchun (taqdimot yoki sinov) tayyor ma'lumotlar skripti bor:
+
+```bash
+cd backend
+node seed-demo.js        # Docker'da: docker compose exec backend node seed-demo.js
+```
+
+U yangi klinikalar, ularga shifokorlar (profil rasmlari bilan), ona va bolalar, so'nggi 30 kunlik murojaatlar va mutaxassislar bilan yozishmalarni qo'shadi. Qayta ishga tushirsa ham ikki marta qo'shmaydi. Rasmlar internetdan (Wikimedia Commons, randomuser.me) yuklab olinadi. Sinov login va parollari `backend/seed-demo.js` faylining boshida yozilgan.
+
 `.env`, `backend/private/` (admin paroli va shifrlash kaliti) va `backend/uploads/` (yuklangan fayllar) GitHub'ga yuklanmaydi, shuning uchun yangi kompyuterda `.env` ni o'zingiz yaratasiz (Docker ishlatsangiz `./deploy.sh` buni o'zi qiladi).
