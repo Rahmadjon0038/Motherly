@@ -121,6 +121,14 @@ const requireRole = (role) => (req, _res, next) => {
   next();
 };
 
+// E'lon va video yuklash faqat admin hujjatini tasdiqlagan mutaxassisga ruxsat.
+function requireApprovedNurse(req, _res, next) {
+  if (req.user.verificationStatus !== "approved") {
+    throw new HttpError(403, "Avval shifokorligingizni tasdiqlovchi hujjatni yuklang. Administrator tasdiqlagach ruxsat beriladi", "verification_required");
+  }
+  next();
+}
+
 // Mehmon — ro'yxatdan o'tmagan ona (telefoni yo'q). Ilovadan foydalanadi, telefonni faqat kerak bo'lganda tasdiqlaydi.
 const isGuest = (u) => u.role === "user" && !u.phone;
 const userJson = (u) => ({ id: u.id, phone: u.phone, role: u.role, name: u.name, username: u.username, guest: isGuest(u) });
@@ -359,6 +367,7 @@ app.get("/api/consultants/me", auth, requireRole("nurse"), async (req, res) => {
   const profiles = await DoctorProfile.findAll({ where: { userId: req.user.id } });
   const nurseProfile = await NurseProfile.findOne({ where: { userId: req.user.id } });
   res.json({
+    verification: verificationJson(req.user),
     profile: nurseProfileJson(req.user, nurseProfile),
     clinics: clinics.map((c) => {
       const p = profiles.find((x) => x.clinicId === c.id);
@@ -372,7 +381,7 @@ app.get("/api/consultants/me", auth, requireRole("nurse"), async (req, res) => {
 });
 
 // E'lon joylash yoki yangilash: qaysi klinika nomidan ekani `clinicId` bilan tanlanadi.
-app.put("/api/consultants/me", auth, requireRole("nurse"), async (req, res) => {
+app.put("/api/consultants/me", auth, requireRole("nurse"), requireApprovedNurse, async (req, res) => {
   const { name, field, experience, about, price } = req.body;
   const clinicId = parseInt(req.body.clinicId) || 0;
   const clinics = await nurseClinics(req.user);
@@ -714,6 +723,7 @@ app.get("/api/clinic/consultants", auth, requireRole("clinic"), async (req, res)
     const p = u && profiles.find((x) => x.userId === u.id);
     return {
       id: r.id, phone: r.phone, name: r.name || u?.name || "", field: r.field || "",
+      verification: u?.verificationStatus || "none",
       // canManage: parolni shu klinika bergan (yoki hamshirada parol hali yo'q), demak ko'rish va o'zgartirish mumkin
       canManage: r.createdAccount || (!!u && !u.passwordHash),
       listing: p ? { field: p.field, price: p.price } : null,
@@ -1437,6 +1447,92 @@ app.delete("/api/admin/videos/:id", ...requireAdmin, async (req, res) => {
   res.json({ ok: true });
 });
 
+// ---------- shifokorlik hujjatini tasdiqlash ----------
+//
+// Mutaxassis hujjat (diplom, sertifikat) yuklaydi, admin ko'rib tasdiqlaydi yoki rad etadi.
+// Holat: none (yuklanmagan) | pending (tekshirilmoqda) | approved | rejected.
+// Hujjat fayli ochiq /uploads da emas, yopiq private/documents papkasida saqlanadi.
+
+const DOC_DIR = path.join(__dirname, "private", "documents");
+fs.mkdirSync(DOC_DIR, { recursive: true });
+
+const uploadDocument = multer({
+  storage: multer.diskStorage({
+    destination: DOC_DIR,
+    filename: (_req, file, cb) => cb(null, `${Date.now()}-${Math.round(Math.random() * 1e6)}${path.extname(file.originalname).toLowerCase()}`),
+  }),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    fixMime(file);
+    /^(application\/pdf|image\/(jpeg|png|webp))$/.test(file.mimetype) ? cb(null, true) : cb(new HttpError(400, "Faqat PDF yoki rasm (JPG, PNG)"));
+  },
+});
+
+const verificationJson = (u) => ({
+  status: u.verificationStatus || "none",
+  documentName: u.documentName || "",
+  uploadedAt: u.documentUploadedAt || null,
+  rejectionReason: u.rejectionReason || "",
+});
+
+const removeDocument = (file) => {
+  if (file) fs.rm(path.join(DOC_DIR, path.basename(file)), { force: true }, () => {});
+};
+
+app.get("/api/nurse/verification", auth, requireRole("nurse"), (req, res) => res.json(verificationJson(req.user)));
+
+app.post("/api/nurse/verification", auth, requireRole("nurse"), uploadDocument.single("file"), async (req, res) => {
+  if (!req.file) throw new HttpError(400, "Hujjat faylini tanlang");
+  if (req.user.verificationStatus === "approved") {
+    removeDocument(req.file.filename);
+    throw new HttpError(400, "Hujjatingiz allaqachon tasdiqlangan");
+  }
+  const old = req.user.documentFile;
+  await req.user.update({
+    verificationStatus: "pending", documentFile: req.file.filename, documentName: String(req.file.originalname).slice(0, 200),
+    documentMime: req.file.mimetype, documentUploadedAt: new Date(), rejectionReason: null, verifiedAt: null,
+  });
+  removeDocument(old);
+  res.status(201).json(verificationJson(req.user));
+});
+
+// Admin: hujjat yuborgan mutaxassislar. Kutilayotganlari birinchi.
+app.get("/api/admin/verifications", ...requireAdmin, async (_req, res) => {
+  const users = await User.findAll({ where: { role: "nurse", verificationStatus: { [Op.ne]: "none" }, documentFile: { [Op.ne]: null } }, order: [["documentUploadedAt", "DESC"]] });
+  const phones = users.map((u) => u.phone).filter(Boolean);
+  const rows = phones.length ? await ClinicNurse.findAll({ where: { phone: { [Op.in]: phones } }, include: [{ model: Clinic }] }) : [];
+  const rank = { pending: 0, rejected: 1, approved: 2 };
+  res.json(
+    users
+      .map((u) => ({
+        id: u.id, name: u.name || "", phone: u.phone || "", ...verificationJson(u), mime: u.documentMime || "",
+        clinics: rows.filter((r) => r.phone === u.phone && r.Clinic).map((r) => r.Clinic.name),
+      }))
+      .sort((a, b) => rank[a.status] - rank[b.status]),
+  );
+});
+
+app.get("/api/admin/verifications/:id/document", ...requireAdmin, async (req, res) => {
+  const u = await User.findOne({ where: { id: parseInt(req.params.id) || 0, role: "nurse" } });
+  if (!u?.documentFile) throw new HttpError(404, "Hujjat topilmadi");
+  const file = path.join(DOC_DIR, path.basename(u.documentFile));
+  if (!fs.existsSync(file)) throw new HttpError(404, "Hujjat fayli topilmadi");
+  res.setHeader("Content-Type", u.documentMime || "application/octet-stream");
+  res.setHeader("Cache-Control", "no-store");
+  res.sendFile(file);
+});
+
+app.put("/api/admin/verifications/:id", ...requireAdmin, async (req, res) => {
+  const u = await User.findOne({ where: { id: parseInt(req.params.id) || 0, role: "nurse" } });
+  if (!u || u.verificationStatus === "none") throw new HttpError(404, "Hujjat topilmadi");
+  const status = req.body.status;
+  if (!["approved", "rejected"].includes(status)) throw new HttpError(400, "Holat noto'g'ri");
+  const reason = String(req.body.reason || "").trim().slice(0, 500);
+  if (status === "rejected" && !reason) throw new HttpError(400, "Rad etish sababini yozing");
+  await u.update({ verificationStatus: status, rejectionReason: status === "rejected" ? reason : null, verifiedAt: status === "approved" ? new Date() : null });
+  res.json({ ok: true });
+});
+
 // ---------- mutaxassisning o'z videolari ----------
 
 const nurseVideoJson = async (v) => ({ ...adminVideoJson(v), purchases: await Purchase.count({ where: { videoId: v.id } }) });
@@ -1446,7 +1542,7 @@ app.get("/api/nurse/videos", auth, requireRole("nurse"), async (req, res) => {
   res.json(await Promise.all(vs.map(nurseVideoJson)));
 });
 
-app.post("/api/nurse/videos", auth, requireRole("nurse"), uploadVideo.single("file"), async (req, res) => {
+app.post("/api/nurse/videos", auth, requireRole("nurse"), requireApprovedNurse, uploadVideo.single("file"), async (req, res) => {
   try {
     const data = cleanVideo({ ...req.body, category: req.user.name || "Mutaxassis" });
     const link = checkVideoLink(req.body.videoUrl);

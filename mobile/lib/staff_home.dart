@@ -5,6 +5,7 @@ import 'my_videos.dart';
 import 'nurse_profile.dart';
 import 'payment.dart';
 import 'theme.dart';
+import 'verification.dart';
 import 'widgets.dart';
 
 /// Mutaxassis (hamshira): "Mening bemorlarim" (Telegram uslubidagi chatlar) va klinikalari nomidan e'lonlari.
@@ -35,6 +36,10 @@ class _NurseHomeState extends State<NurseHome> {
             .map((c) => Map<String, dynamic>.from(c as Map))
             .toList();
         final profile = Map<String, dynamic>.from(data['profile'] as Map);
+        final verification = Map<String, dynamic>.from(
+          data['verification'] as Map,
+        );
+        final approved = verification['status'] == 'approved';
         Widget profileButton() => IconButton(
           tooltip: 'Profilim',
           icon: const Icon(Icons.person_outline),
@@ -71,7 +76,9 @@ class _NurseHomeState extends State<NurseHome> {
             ),
             actions: [profileButton(), _logout()],
           ),
-          body: tab == 0
+          body: tab != 0 && !approved
+              ? VerificationView(verification: verification, onChanged: reload)
+              : tab == 0
               ? const ConversationList(
                   emptyText: 'Hali bemorlar yo\'q.\nOna sizni yollaganda suhbat shu yerda paydo bo\'ladi.',
                 )

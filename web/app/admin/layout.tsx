@@ -9,6 +9,7 @@ import { PageLoader } from "@/components/Spinner";
 const nav: NavItem[] = [
   { href: "/admin", label: "Klinikalar", match: (p) => p === "/admin" || p.startsWith("/admin/clinics"), icon: icons.clinics },
   { href: "/admin/videos", label: "Video darslar", match: (p) => p.startsWith("/admin/videos") || p.startsWith("/admin/playlists"), icon: icons.video },
+  { href: "/admin/verifications", label: "Hujjatlar", match: (p) => p.startsWith("/admin/verifications"), icon: icons.verify },
   { href: "/admin/stats", label: "Statistika", match: (p) => p.startsWith("/admin/stats"), icon: icons.stats },
 ];
 

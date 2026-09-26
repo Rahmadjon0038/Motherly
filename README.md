@@ -22,9 +22,9 @@ Mobil ilova ham, veb-panel ham faqat backend bilan gaplashadi (JSON orqali), bac
 Tizimda to'rt xil foydalanuvchi bor:
 
 - **Ona** mobil ilovadan foydalanadi. Ilovani ochganda unga avtomatik "mehmon" akkaunt ochiladi, shuning uchun hech narsa to'ldirmasdan chatga yozishi mumkin. Telefon raqamini faqat pul to'lamoqchi yoki klinikaga murojaat qoldirmoqchi bo'lganda tasdiqlaydi. O'shanda mehmon sifatida qilgan hamma narsasi (bolalari, suhbatlari) o'z akkauntiga o'tadi.
-- **Mutaxassis** ham mobil ilovadan kiradi, telefon raqami va parol bilan. Akkauntni unga klinika ochib beradi. Mutaxassis o'z profilini (rasm, tajriba, nima ish qila olishi) o'zi to'ldiradi, onalar bilan yozishadi va xohlasa o'zi tayyorlagan video darslarni narxini qo'yib yuklaydi.
+- **Mutaxassis** ham mobil ilovadan kiradi, telefon raqami va parol bilan. Akkauntni unga klinika ochib beradi. Mutaxassis o'z profilini (rasm, tajriba, nima ish qila olishi) o'zi to'ldiradi va onalar bilan yozishadi. Xizmat joylash va video yuklash uchun avval shifokor ekanini tasdiqlovchi hujjatni (diplom, sertifikat) yuklaydi. Admin tekshirib tasdiqlagach, xohlasa o'zi tayyorlagan video darslarni narxini qo'yib yuklaydi.
 - **Klinika** veb-panelga login va parol bilan kiradi (ularni admin beradi). U yerda klinika o'z ma'lumotlarini to'ldiradi: rasmlar, ish vaqti, telefonlar, shifokorlar. Ilova orqali kelgan murojaatlarni ko'radi, mutaxassislar akkauntini yaratadi va nechta bemor kelganini statistikadan biladi.
-- **Admin** — platforma egasi. Klinikalarni yaratadi, bepul video darslar va pleylistlarni boshqaradi, umumiy statistikani ko'radi.
+- **Admin** — platforma egasi. Klinikalarni yaratadi, mutaxassislarning hujjatlarini tekshirib tasdiqlaydi yoki rad etadi, bepul video darslar va pleylistlarni boshqaradi, umumiy statistikani ko'radi.
 
 ## Qanday texnologiyalar ishlatilgan
 

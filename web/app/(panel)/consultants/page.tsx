@@ -146,6 +146,12 @@ export default function ConsultantsPage() {
                 <div className="flex flex-wrap items-center gap-2">
                   <Link href={`/consultants/${c.id}`} className="font-extrabold hover:text-brand hover:underline">{c.name || "Ismi kiritilmagan"}</Link>
                   {c.field && <span className="rounded bg-brand-light px-2 py-0.5 text-xs font-extrabold text-brand">{c.field}</span>}
+                  {c.verification === "approved" && (
+                    <span className="rounded bg-emerald-100 px-2 py-0.5 text-xs font-extrabold text-emerald-700">Tasdiqlangan</span>
+                  )}
+                  {c.verification === "pending" && (
+                    <span className="rounded bg-amber-100 px-2 py-0.5 text-xs font-extrabold text-amber-800">Hujjati tekshirilmoqda</span>
+                  )}
                   <span
                     className={`rounded px-2 py-0.5 text-xs font-extrabold ${
                       c.listing ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-muted"

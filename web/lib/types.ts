@@ -150,6 +150,8 @@ export interface ClinicConsultant {
   field: string;
   /** Parolni ko'rish va o'zgartirish mumkinmi (akkauntni shu klinika yaratgan). */
   canManage: boolean;
+  /** Shifokorlik hujjati holati: none | pending | approved | rejected. */
+  verification?: string;
   /** Shu klinika nomidan e'lon joylaganmi. */
   listing: { field: string; price: number } | null;
 }
