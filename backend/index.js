@@ -355,8 +355,10 @@ app.get("/api/consultants", auth, async (req, res) => {
   const hires = await Hire.findAll({ where: { userId: req.user.id } });
   const hired = new Set(hires.map((h) => h.doctorProfileId));
   const convs = await Conversation.findAll({ where: { kind: "nurse", userId: req.user.id } });
+  const profiles = await NurseProfile.findAll({ where: { userId: { [Op.in]: [...new Set(list.map((d) => d.userId))] } } });
   res.json(list.map((d) => ({
     ...consultantJson(d), hired: hired.has(d.id),
+    nurseId: d.userId, photoUrl: profiles.find((p) => p.userId === d.userId)?.photoUrl || null,
     conversationId: hired.has(d.id) ? convs.find((c) => c.peerId === d.userId)?.id ?? null : null,
   })));
 });
@@ -924,17 +926,13 @@ app.get("/api/clinic/consultants/:id/profile", auth, requireRole("clinic"), asyn
   res.json({ ...json, phone: row.phone, field: row.field || "", registered: !!user });
 });
 
-// Chatdagi mutaxassis haqida ma'lumot (faqat ona ko'radi). Telefon raqami ko'rsatilmaydi: to'lovni chetlab o'tishga yo'l qo'ymaslik uchun.
-app.get("/api/conversations/:id/peer", auth, requireRole("user"), async (req, res) => {
-  const conv = await getConversationFor(req.user, req.params.id);
-  if (conv.kind !== "nurse" || conv.userId !== req.user.id) throw new HttpError(404, "Mutaxassis topilmadi");
-  const nurse = await User.findByPk(conv.peerId);
-  if (!nurse) throw new HttpError(404, "Mutaxassis topilmadi");
+// Mutaxassisning onaga ko'rinadigan to'liq ma'lumoti. Telefon raqami ko'rsatilmaydi: to'lovni chetlab o'tishga yo'l qo'ymaslik uchun.
+async function nurseDetail(nurse) {
   const profile = await NurseProfile.findOne({ where: { userId: nurse.id } });
   const listings = await DoctorProfile.findAll({ where: { userId: nurse.id, clinicId: { [Op.ne]: null } }, include: [{ model: Clinic }], order: [["id", "ASC"]] });
-  // Klinikaga bog'lanmagan eski e'lon ham ma'lumot manbai bo'la oladi (mutaxassislik, tajriba, tavsif).
+  // Klinikaga bog'lanmagan eski xizmat ham ma'lumot manbai bo'la oladi (mutaxassislik, tajriba, tavsif).
   const first = listings[0] || (await DoctorProfile.findOne({ where: { userId: nurse.id }, order: [["id", "ASC"]] }));
-  res.json({
+  return {
     id: nurse.id,
     photoUrl: profile?.photoUrl || null, skills: profile?.skills || "",
     name: nurse.name || "",
@@ -947,7 +945,23 @@ app.get("/api/conversations/:id/peer", auth, requireRole("user"), async (req, re
       id: l.Clinic.id, name: l.Clinic.name, address: l.Clinic.address || "", photoUrl: l.Clinic.photoUrl || null,
       field: l.field, price: l.price,
     })),
-  });
+  };
+}
+
+// Chatdagi mutaxassis haqida (faqat ona ko'radi).
+app.get("/api/conversations/:id/peer", auth, requireRole("user"), async (req, res) => {
+  const conv = await getConversationFor(req.user, req.params.id);
+  if (conv.kind !== "nurse" || conv.userId !== req.user.id) throw new HttpError(404, "Mutaxassis topilmadi");
+  const nurse = await User.findByPk(conv.peerId);
+  if (!nurse) throw new HttpError(404, "Mutaxassis topilmadi");
+  res.json(await nurseDetail(nurse));
+});
+
+// Mutaxassislar ro'yxatidan: sotib olmasdan ham to'liq ma'lumotini ko'rish.
+app.get("/api/nurses/:id/profile", auth, async (req, res) => {
+  const nurse = await User.findOne({ where: { id: parseInt(req.params.id) || 0, role: "nurse" } });
+  if (!nurse) throw new HttpError(404, "Mutaxassis topilmadi");
+  res.json(await nurseDetail(nurse));
 });
 
 // Ona uchun: mening mutaxassislarim. Hamshira uchun: mening bemorlarim.

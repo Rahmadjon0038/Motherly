@@ -17,8 +17,12 @@ String _som(int n) =>
 /// Ona chatda profil tugmasini bossa: mutaxassisning tizimdagi ma'lumotlari.
 /// Telefon raqami ko'rsatilmaydi (to'lovni chetlab o'tishga yo'l qo'ymaslik uchun).
 class PeerProfilePage extends StatelessWidget {
-  const PeerProfilePage({super.key, required this.conversationId});
-  final int conversationId;
+  const PeerProfilePage({super.key, this.conversationId, this.nurseId})
+    : assert(conversationId != null || nurseId != null);
+
+  /// Chatdan ochilsa suhbat raqami, mutaxassislar ro'yxatidan ochilsa mutaxassisning o'zi.
+  final int? conversationId;
+  final int? nurseId;
 
   @override
   Widget build(BuildContext context) {

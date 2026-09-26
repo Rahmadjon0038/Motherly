@@ -6,6 +6,7 @@ import 'auth.dart';
 import 'geo.dart';
 import 'home_chat.dart';
 import 'maps.dart';
+import 'nurse_profile.dart';
 import 'payment.dart';
 import 'profile.dart';
 import 'theme.dart';
@@ -23,42 +24,83 @@ class _UserHomeState extends State<UserHome> {
   int _tab = 0;
 
   @override
-  Widget build(BuildContext context) => ListenableBuilder(listenable: session, builder: (context, _) => _build(context));
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: session,
+    builder: (context, _) => _build(context),
+  );
 
   Widget _build(BuildContext context) {
     const titles = ['Chat', 'Mutaxassislar', 'Yaqin klinikalar'];
     // Har bir tab almashganda ma'lumot qayta yuklanadi.
-    final pages = [const ChatHome(), const _ConsultantsTab(), const _ClinicsTab()];
+    final pages = [
+      const ChatHome(),
+      const _ConsultantsTab(),
+      const _ClinicsTab(),
+    ];
     return Scaffold(
       // Chat sahifasi o'z sarlavhasiga ega (home_chat.dart), boshqa tablarda oddiy AppBar.
-      appBar: _tab == 0 ? null : AppBar(
-        title: Text(titles[_tab]),
-        actions: [
-          ListenableBuilder(
-            listenable: session,
-            builder: (_, _) => session.isGuest
-                ? TextButton.icon(onPressed: () => openProfile(context), icon: const Icon(Icons.login_rounded), label: const Text('Kirish'))
-                : IconButton(onPressed: () => openProfile(context), icon: const Icon(Icons.person_outline), tooltip: 'Profil'),
-          ),
-          if (!session.isGuest) IconButton(onPressed: session.logout, icon: const Icon(Icons.logout), tooltip: 'Chiqish'),
-        ],
-      ),
+      appBar: _tab == 0
+          ? null
+          : AppBar(
+              title: Text(titles[_tab]),
+              actions: [
+                ListenableBuilder(
+                  listenable: session,
+                  builder: (_, _) => session.isGuest
+                      ? TextButton.icon(
+                          onPressed: () => openProfile(context),
+                          icon: const Icon(Icons.login_rounded),
+                          label: const Text('Kirish'),
+                        )
+                      : IconButton(
+                          onPressed: () => openProfile(context),
+                          icon: const Icon(Icons.person_outline),
+                          tooltip: 'Profil',
+                        ),
+                ),
+                if (!session.isGuest)
+                  IconButton(
+                    onPressed: session.logout,
+                    icon: const Icon(Icons.logout),
+                    tooltip: 'Chiqish',
+                  ),
+              ],
+            ),
       body: pages[_tab],
       bottomNavigationBar: NavigationBar(
         selectedIndex: _tab,
         onDestinationSelected: (i) {
           // "Darslar" alohida ekran: ichida o'zining 2 ta pastki tabi bor.
           if (i == 3) {
-            Navigator.push(context, MaterialPageRoute(builder: (_) => const VideoSection()));
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const VideoSection()),
+            );
           } else {
             setState(() => _tab = i);
           }
         },
         destinations: const [
-          NavigationDestination(icon: Icon(Icons.chat_bubble_outline), selectedIcon: Icon(Icons.chat_bubble), label: 'Chat'),
-          NavigationDestination(icon: Icon(Icons.support_agent_outlined), selectedIcon: Icon(Icons.support_agent), label: 'Mutaxassis'),
-          NavigationDestination(icon: Icon(Icons.location_on_outlined), selectedIcon: Icon(Icons.location_on), label: 'Klinikalar'),
-          NavigationDestination(icon: Icon(Icons.play_circle_outline), selectedIcon: Icon(Icons.play_circle), label: 'Darslar'),
+          NavigationDestination(
+            icon: Icon(Icons.chat_bubble_outline),
+            selectedIcon: Icon(Icons.chat_bubble),
+            label: 'Chat',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.support_agent_outlined),
+            selectedIcon: Icon(Icons.support_agent),
+            label: 'Mutaxassis',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.location_on_outlined),
+            selectedIcon: Icon(Icons.location_on),
+            label: 'Klinikalar',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.play_circle_outline),
+            selectedIcon: Icon(Icons.play_circle),
+            label: 'Darslar',
+          ),
         ],
       ),
     );
@@ -83,67 +125,136 @@ class _ConsultantsTab extends StatelessWidget {
             final d = list[i] as Map<String, dynamic>;
             final hired = d['hired'] == true;
             return Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Row(children: [
-                    CircleAvatar(radius: 26, child: Text((d['name'] as String)[0], style: const TextStyle(fontSize: 22))),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text(d['name'] as String, style: Theme.of(context).textTheme.titleMedium),
-                        Text('${d['field']} · ${d['experience']} yil tajriba'),
-                        if (d['clinic'] != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 2),
-                            child: Row(children: [
-                              const Icon(Icons.local_hospital_outlined, size: 15, color: brand),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: Text(
-                                  (d['clinic'] as Map)['name'] as String,
-                                  style: const TextStyle(color: brand, fontWeight: FontWeight.w600),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ]),
-                          ),
-                      ]),
-                    ),
-                  ]),
-                  if ((d['about'] as String).isNotEmpty) ...[const SizedBox(height: 10), Text(d['about'] as String)],
-                  const SizedBox(height: 12),
-                  GradientButton(
-                    label: hired ? 'Suhbatlashish' : 'Maslahat olish · ${som(d['price'] as int)} so\'m',
-                    icon: hired ? Icons.chat_bubble_outline : null,
-                    onPressed: hired
-                        ? () async {
-                            final id = d['conversationId'] as int?;
-                            if (id == null) return reload();
-                            await Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (_) => ChatPage(title: d['name'] as String, conversationId: id, subtitle: d['field'] as String?)),
-                            );
-                          }
-                        : () async {
-                            if (!await ensureRegistered(context, why: 'To\'lov qilish uchun')) return;
-                            if (!context.mounted) return;
-                            final ok = await showPayment(
-                              context,
-                              title: '${d['name']} bilan konsultatsiya',
-                              price: d['price'] as int,
-                              path: '/consultants/${d['id']}/hire',
-                            );
-                            if (ok) {
-                              reload();
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                                    content: Text('To\'lov qabul qilindi. "Chat → Mening mutaxassisim" bo\'limiga o\'ting.')));
-                              }
-                            }
-                          },
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        PeerProfilePage(nurseId: d['nurseId'] as int),
                   ),
-                ]),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 26,
+                            backgroundImage: d['photoUrl'] != null
+                                ? NetworkImage(
+                                    Api.fileUrl(d['photoUrl'] as String),
+                                  )
+                                : null,
+                            child: d['photoUrl'] == null
+                                ? Text(
+                                    (d['name'] as String)[0],
+                                    style: const TextStyle(fontSize: 22),
+                                  )
+                                : null,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  d['name'] as String,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleMedium,
+                                ),
+                                Text(
+                                  '${d['field']} · ${d['experience']} yil tajriba',
+                                ),
+                                if (d['clinic'] != null)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 2),
+                                    child: Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.local_hospital_outlined,
+                                          size: 15,
+                                          color: brand,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Expanded(
+                                          child: Text(
+                                            (d['clinic'] as Map)['name']
+                                                as String,
+                                            style: const TextStyle(
+                                              color: brand,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      if ((d['about'] as String).isNotEmpty) ...[
+                        const SizedBox(height: 10),
+                        Text(d['about'] as String),
+                      ],
+                      const SizedBox(height: 12),
+                      GradientButton(
+                        label: hired
+                            ? 'Suhbatlashish'
+                            : 'Maslahat olish · ${som(d['price'] as int)} so\'m',
+                        icon: hired ? Icons.chat_bubble_outline : null,
+                        onPressed: hired
+                            ? () async {
+                                final id = d['conversationId'] as int?;
+                                if (id == null) return reload();
+                                await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => ChatPage(
+                                      title: d['name'] as String,
+                                      conversationId: id,
+                                      subtitle: d['field'] as String?,
+                                    ),
+                                  ),
+                                );
+                              }
+                            : () async {
+                                if (!await ensureRegistered(
+                                  context,
+                                  why: 'To\'lov qilish uchun',
+                                )) {
+                                  return;
+                                }
+                                if (!context.mounted) return;
+                                final ok = await showPayment(
+                                  context,
+                                  title: '${d['name']} bilan konsultatsiya',
+                                  price: d['price'] as int,
+                                  path: '/consultants/${d['id']}/hire',
+                                );
+                                if (ok) {
+                                  reload();
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'To\'lov qabul qilindi. "Chat → Mening mutaxassisim" bo\'limiga o\'ting.',
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                }
+                              },
+                      ),
+                    ],
+                  ),
+                ),
               ),
             );
           },
@@ -187,7 +298,9 @@ class _ClinicsTabState extends State<_ClinicsTab> with WidgetsBindingObserver {
   // Foydalanuvchi sozlamalarda joylashuvni yoqib qaytsa, ro'yxat yangilanadi.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed && !_real && mounted) setState(() => _version++);
+    if (state == AppLifecycleState.resumed && !_real && mounted) {
+      setState(() => _version++);
+    }
   }
 
   Future<void> _explainIfNeeded() async {
@@ -204,8 +317,14 @@ class _ClinicsTabState extends State<_ClinicsTab> with WidgetsBindingObserver {
         ),
         actionsAlignment: MainAxisAlignment.center,
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Hozir emas')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Joylashuvni yoqish')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Hozir emas'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Joylashuvni yoqish'),
+          ),
         ],
       ),
     );
@@ -224,7 +343,8 @@ class _ClinicsTabState extends State<_ClinicsTab> with WidgetsBindingObserver {
       load: () async {
         // Ruxsatni bu yerda so'ramaymiz: buning uchun yuqoridagi tushuntirish oynasi bor.
         final pos = await currentPosition(ask: false);
-        final clinics = await Api.I.get('/clinics?lat=${pos.lat}&lng=${pos.lng}') as List;
+        final clinics =
+            await Api.I.get('/clinics?lat=${pos.lat}&lng=${pos.lng}') as List;
         return (clinics: clinics, pos: pos);
       },
       builder: (context, data, reload) {
@@ -233,31 +353,50 @@ class _ClinicsTabState extends State<_ClinicsTab> with WidgetsBindingObserver {
         final all = data.clinics.cast<Map<String, dynamic>>();
         final shown = _showAll ? all : all.take(_nearestCount).toList();
         Future<void> openClinic(Map<String, dynamic> c) async {
-          await Navigator.push(context, MaterialPageRoute(builder: (_) => ClinicPage(c)));
+          await Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => ClinicPage(c)),
+          );
           reload();
         }
 
         return RefreshIndicator(
           onRefresh: () async => reload(),
-          child: ListView(padding: const EdgeInsets.all(12), children: [
-            if (!data.pos.real)
-              Card(
-                color: const Color(0xFFFFF4E0),
-                child: ListTile(
-                  leading: const Icon(Icons.location_off_outlined, color: Color(0xFFB7791F)),
-                  title: const Text('Joylashuv o\'chiq', style: TextStyle(fontWeight: FontWeight.w700)),
-                  subtitle: const Text('Eng yaqin klinikalarni ko\'rsatish uchun yoqing. Hozir masofalar Toshkent markaziga nisbatan.'),
-                  isThreeLine: true,
-                  trailing: FilledButton.tonal(onPressed: _enable, child: const Text('Yoqish')),
+          child: ListView(
+            padding: const EdgeInsets.all(12),
+            children: [
+              if (!data.pos.real)
+                Card(
+                  color: const Color(0xFFFFF4E0),
+                  child: ListTile(
+                    leading: const Icon(
+                      Icons.location_off_outlined,
+                      color: Color(0xFFB7791F),
+                    ),
+                    title: const Text(
+                      'Joylashuv o\'chiq',
+                      style: TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                    subtitle: const Text(
+                      'Eng yaqin klinikalarni ko\'rsatish uchun yoqing. Hozir masofalar Toshkent markaziga nisbatan.',
+                    ),
+                    isThreeLine: true,
+                    trailing: FilledButton.tonal(
+                      onPressed: _enable,
+                      child: const Text('Yoqish'),
+                    ),
+                  ),
                 ),
-              ),
-            for (final c in shown) _ClinicCard(c, onTap: () => openClinic(c)),
-            if (!_showAll && all.length > shown.length)
-              TextButton(
-                onPressed: () => setState(() => _showAll = true),
-                child: Text('Yana ${all.length - shown.length} ta klinikani ko\'rsatish'),
-              ),
-          ]),
+              for (final c in shown) _ClinicCard(c, onTap: () => openClinic(c)),
+              if (!_showAll && all.length > shown.length)
+                TextButton(
+                  onPressed: () => setState(() => _showAll = true),
+                  child: Text(
+                    'Yana ${all.length - shown.length} ta klinikani ko\'rsatish',
+                  ),
+                ),
+            ],
+          ),
         );
       },
     );
@@ -325,31 +464,52 @@ class _ClinicPageState extends State<ClinicPage> {
     final url = link != null && link.isNotEmpty
         ? link
         : 'https://www.google.com/maps/search/?api=1&query=${c['lat']},${c['lng']}';
-    final ok = await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication).catchError((_) => false);
+    final ok = await launchUrl(
+      Uri.parse(url),
+      mode: LaunchMode.externalApplication,
+    ).catchError((_) => false);
     if (!ok && mounted) showError(context, 'Xaritani ochib bo\'lmadi');
   }
 
   /// Klinikaga murojaat yuboradi (navbat yo'q: klinika o'zi bog'lanadi).
   Future<void> _go() async {
-    if (!await ensureRegistered(context, why: 'Murojaat yuborish uchun klinika sizga bog\'lana olishi kerak, shuning uchun')) {
+    if (!await ensureRegistered(
+      context,
+      why: 'Murojaat yuborish uchun klinika sizga bog\'lana olishi kerak, shuning uchun',
+    )) {
       return;
     }
     if (!mounted) return;
     setState(() => _busy = true);
     try {
-      final v = await Api.I.post('/clinics/${widget.clinic['id']}/visit') as Map<String, dynamic>;
+      final v = await Api.I.post(
+        '/clinics/${widget.clinic['id']}/visit',
+      ) as Map<String, dynamic>;
       if (!mounted) return;
       final again = v['duplicate'] == true;
       await showDialog<void>(
         context: context,
         builder: (ctx) => AlertDialog(
-          icon: const Icon(Icons.mark_email_read_outlined, size: 40, color: brand),
-          title: Text(again ? 'Murojaatingiz allaqachon yuborilgan' : 'Murojaatingiz yuborildi'),
+          icon: const Icon(
+            Icons.mark_email_read_outlined,
+            size: 40,
+            color: brand,
+          ),
+          title: Text(
+            again
+                ? 'Murojaatingiz allaqachon yuborilgan'
+                : 'Murojaatingiz yuborildi',
+          ),
           content: Text(
             '${v['clinic']} murojaatingizni ko\'rib, siz bilan bog\'lanadi.',
             textAlign: TextAlign.center,
           ),
-          actions: [FilledButton(onPressed: () => Navigator.pop(ctx), child: const Text('Tushunarli'))],
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Tushunarli'),
+            ),
+          ],
         ),
       );
       if (mounted) Navigator.pop(context);
@@ -370,70 +530,98 @@ class _ClinicPageState extends State<ClinicPage> {
     final closed = isClosedNow(c);
     return Scaffold(
       appBar: AppBar(title: Text(c['name'] as String)),
-      body: ListView(padding: const EdgeInsets.all(16), children: [
-        if (_photoUrls(c).isNotEmpty) _ClinicGallery(_photoUrls(c)),
-        ListTile(leading: const Icon(Icons.place), title: Text(c['address'] as String)),
-        ListTile(
-          leading: const Icon(Icons.map_outlined, color: brand),
-          title: const Text('Xaritada ochish', style: TextStyle(color: brand, fontWeight: FontWeight.w600)),
-          trailing: const Icon(Icons.open_in_new, color: brand),
-          onTap: () => _openMap(c),
-        ),
-        if (closed)
-          Card(
-            color: Colors.grey.shade200,
-            child: ListTile(
-              leading: const Icon(Icons.schedule, color: Colors.grey),
-              title: Text(hoursNote(c), style: const TextStyle(fontWeight: FontWeight.w600)),
-              subtitle: const Text('Murojaatingizni baribir yuborishingiz mumkin, klinika ish vaqtida javob beradi'),
-            ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          if (_photoUrls(c).isNotEmpty) _ClinicGallery(_photoUrls(c)),
+          ListTile(
+            leading: const Icon(Icons.place),
+            title: Text(c['address'] as String),
           ),
-        _HoursTile(c),
-        ..._phoneTiles(context, c),
-        if (about.isNotEmpty) ...[const Divider(), Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: Text(about))],
-        if (services.isNotEmpty) ...[
-          const Divider(),
-          Text('Xizmatlar', style: Theme.of(context).textTheme.titleMedium),
-          Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: Text(services)),
-        ],
-        if (staff.isNotEmpty) ...[
-          const Divider(),
-          Text('Shifokorlar', style: Theme.of(context).textTheme.titleMedium),
-          for (final s in staff)
-            ListTile(
-              leading: const Icon(Icons.person),
-              title: Text(s['name'] as String),
-              subtitle: Text('${_staffLine(s)}\nIsh vaqti: ${s['schedule']}'),
-              isThreeLine: true,
+          ListTile(
+            leading: const Icon(Icons.map_outlined, color: brand),
+            title: const Text(
+              'Xaritada ochish',
+              style: TextStyle(color: brand, fontWeight: FontWeight.w600),
             ),
-        ],
-      ]),
-      bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(children: [
-            Expanded(
-              flex: 5,
-              child: SizedBox(
-                height: 56,
-                child: OutlinedButton.icon(
-                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => RouteMapPage(c))),
-                  icon: const Icon(Icons.directions),
-                  label: const Text('Yo\'nalish'),
+            trailing: const Icon(Icons.open_in_new, color: brand),
+            onTap: () => _openMap(c),
+          ),
+          if (closed)
+            Card(
+              color: Colors.grey.shade200,
+              child: ListTile(
+                leading: const Icon(Icons.schedule, color: Colors.grey),
+                title: Text(
+                  hoursNote(c),
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                subtitle: const Text(
+                  'Murojaatingizni baribir yuborishingiz mumkin, klinika ish vaqtida javob beradi',
                 ),
               ),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              flex: 6,
-              child: GradientButton(
-                label: 'Murojaat yuborish',
-                icon: null,
-                busy: _busy,
-                onPressed: _go,
-              ),
+          _HoursTile(c),
+          ..._phoneTiles(context, c),
+          if (about.isNotEmpty) ...[
+            const Divider(),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Text(about),
             ),
-          ]),
+          ],
+          if (services.isNotEmpty) ...[
+            const Divider(),
+            Text('Xizmatlar', style: Theme.of(context).textTheme.titleMedium),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Text(services),
+            ),
+          ],
+          if (staff.isNotEmpty) ...[
+            const Divider(),
+            Text('Shifokorlar', style: Theme.of(context).textTheme.titleMedium),
+            for (final s in staff)
+              ListTile(
+                leading: const Icon(Icons.person),
+                title: Text(s['name'] as String),
+                subtitle: Text('${_staffLine(s)}\nIsh vaqti: ${s['schedule']}'),
+                isThreeLine: true,
+              ),
+          ],
+        ],
+      ),
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Expanded(
+                flex: 5,
+                child: SizedBox(
+                  height: 56,
+                  child: OutlinedButton.icon(
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => RouteMapPage(c)),
+                    ),
+                    icon: const Icon(Icons.directions),
+                    label: const Text('Yo\'nalish'),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                flex: 6,
+                child: GradientButton(
+                  label: 'Murojaat yuborish',
+                  icon: null,
+                  busy: _busy,
+                  onPressed: _go,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -443,9 +631,14 @@ class _ClinicPageState extends State<ClinicPage> {
 /// Klinikaning asosiy va qo'shimcha raqamlari. Bosilsa qo'ng'iroq oynasi ochiladi.
 List<Widget> _phoneTiles(BuildContext context, Map<String, dynamic> c) {
   final entries = <({String label, String number})>[
-    if ((c['phone'] as String? ?? '').isNotEmpty) (label: 'Asosiy telefon', number: c['phone'] as String),
-    for (final p in (c['extraPhones'] as List? ?? const []).cast<Map<String, dynamic>>())
-      (label: (p['label'] as String?)?.trim() ?? '', number: p['number'] as String),
+    if ((c['phone'] as String? ?? '').isNotEmpty)
+      (label: 'Asosiy telefon', number: c['phone'] as String),
+    for (final p
+        in (c['extraPhones'] as List? ?? const []).cast<Map<String, dynamic>>())
+      (
+        label: (p['label'] as String?)?.trim() ?? '',
+        number: p['number'] as String,
+      ),
   ];
   return [
     for (final e in entries)
@@ -458,8 +651,11 @@ List<Widget> _phoneTiles(BuildContext context, Map<String, dynamic> c) {
           final dial = e.number.replaceAll(RegExp(r'[^\d+]'), '');
           final ok = dial.length < 5
               ? false
-              : await launchUrl(Uri(scheme: 'tel', path: dial)).catchError((_) => false);
-          if (!ok && context.mounted) showError(context, 'Qo\'ng\'iroq qilib bo\'lmadi');
+              : await launchUrl(Uri(scheme: 'tel', path: dial))
+                    .catchError((_) => false);
+          if (!ok && context.mounted) {
+            showError(context, 'Qo\'ng\'iroq qilib bo\'lmadi');
+          }
         },
       ),
   ];
@@ -470,14 +666,26 @@ class _HoursTile extends StatelessWidget {
   const _HoursTile(this.c);
   final Map<String, dynamic> c;
 
-  static const _days = ['Dushanba', 'Seshanba', 'Chorshanba', 'Payshanba', 'Juma', 'Shanba', 'Yakshanba'];
+  static const _days = [
+    'Dushanba',
+    'Seshanba',
+    'Chorshanba',
+    'Payshanba',
+    'Juma',
+    'Shanba',
+    'Yakshanba',
+  ];
 
   @override
   Widget build(BuildContext context) {
     final week = (c['workHours'] as List?)?.cast<Map<String, dynamic>>();
     final icon = const Icon(Icons.schedule);
     if (week == null || week.length != 7) {
-      return ListTile(leading: icon, title: const Text('Ish vaqti'), subtitle: Text(c['hours'] as String));
+      return ListTile(
+        leading: icon,
+        title: const Text('Ish vaqti'),
+        subtitle: Text(c['hours'] as String),
+      );
     }
     return ExpansionTile(
       leading: icon,
@@ -490,7 +698,11 @@ class _HoursTile extends StatelessWidget {
           ListTile(
             dense: true,
             title: Text(_days[i]),
-            trailing: Text(week[i]['closed'] == true ? 'Dam olish' : '${week[i]['open']}–${week[i]['close']}'),
+            trailing: Text(
+              week[i]['closed'] == true
+                  ? 'Dam olish'
+                  : '${week[i]['open']}–${week[i]['close']}',
+            ),
           ),
       ],
     );
@@ -500,12 +712,19 @@ class _HoursTile extends StatelessWidget {
 /// "Pediatr · 12 yil tajriba" ko'rinishidagi qisqa satr.
 String _staffLine(Map<String, dynamic> s) {
   final exp = s['experience'] as int?;
-  return [s['position'] as String, if (exp != null && exp > 0) '$exp yil tajriba'].join(' · ');
+  return [
+    s['position'] as String,
+    if (exp != null && exp > 0) '$exp yil tajriba',
+  ].join(' · ');
 }
 
 /// Klinikaning rasm havolalari: galereya (photos), bo'lmasa bitta asosiy rasm (photoUrl).
 List<String> _photoUrls(Map<String, dynamic> c) {
-  final photos = (c['photos'] as List?)?.map((p) => (p as Map)['url'] as String).toList() ?? const <String>[];
+  final photos =
+      (c['photos'] as List?)
+          ?.map((p) => (p as Map)['url'] as String)
+          .toList() ??
+      const <String>[];
   if (photos.isNotEmpty) return photos;
   final cover = c['photoUrl'] as String?;
   return cover == null ? const [] : [cover];
@@ -531,38 +750,47 @@ class _ClinicGalleryState extends State<_ClinicGallery> {
         borderRadius: BorderRadius.circular(20),
         child: AspectRatio(
           aspectRatio: 16 / 9,
-          child: Stack(children: [
-            PageView.builder(
-              itemCount: widget.urls.length,
-              onPageChanged: (i) => setState(() => _page = i),
-              itemBuilder: (_, i) => Image.network(
-                Api.fileUrl(widget.urls[i]),
-                fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => Container(
-                  color: brandLight,
-                  child: const Icon(Icons.local_hospital, size: 48, color: brand),
+          child: Stack(
+            children: [
+              PageView.builder(
+                itemCount: widget.urls.length,
+                onPageChanged: (i) => setState(() => _page = i),
+                itemBuilder: (_, i) => Image.network(
+                  Api.fileUrl(widget.urls[i]),
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) => Container(
+                    color: brandLight,
+                    child: const Icon(
+                      Icons.local_hospital,
+                      size: 48,
+                      color: brand,
+                    ),
+                  ),
                 ),
               ),
-            ),
-            if (widget.urls.length > 1)
-              Positioned(
-                bottom: 8,
-                left: 0,
-                right: 0,
-                child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                  for (var i = 0; i < widget.urls.length; i++)
-                    Container(
-                      width: 7,
-                      height: 7,
-                      margin: const EdgeInsets.symmetric(horizontal: 3),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: i == _page ? Colors.white : Colors.white54,
-                      ),
-                    ),
-                ]),
-              ),
-          ]),
+              if (widget.urls.length > 1)
+                Positioned(
+                  bottom: 8,
+                  left: 0,
+                  right: 0,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      for (var i = 0; i < widget.urls.length; i++)
+                        Container(
+                          width: 7,
+                          height: 7,
+                          margin: const EdgeInsets.symmetric(horizontal: 3),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: i == _page ? Colors.white : Colors.white54,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
