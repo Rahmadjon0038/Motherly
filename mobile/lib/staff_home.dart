@@ -206,13 +206,7 @@ class _ClinicsView extends StatelessWidget {
                 },
               ),
             ),
-          const Padding(
-            padding: EdgeInsets.fromLTRB(4, 4, 4, 12),
-            child: Text(
-              'Siz quyidagi klinikalarda ishlaysiz. Har bir klinika nomidan alohida e\'lon joylay olasiz: '
-              'onalar sizni shu klinikaning hamshirasi sifatida ko\'radi.',
-            ),
-          ),
+          const SizedBox(height: 8),
           for (final c in clinics)
             Builder(
               builder: (context) {
