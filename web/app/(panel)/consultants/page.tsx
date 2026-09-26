@@ -60,7 +60,7 @@ export default function ConsultantsPage() {
   }
 
   async function remove(c: ClinicConsultant) {
-    if (!window.confirm(`${c.name || c.phone} mutaxassislar ro'yxatingizdan chiqarilsinmi? Uning shu klinika nomidan e'loni ham olib tashlanadi.`)) return;
+    if (!window.confirm(`${c.name || c.phone} mutaxassislar ro'yxatingizdan chiqarilsinmi? Uning shu klinika nomidan qo'ygan xizmati ham olib tashlanadi.`)) return;
     setError("");
     setInfo("");
     try {
@@ -151,7 +151,7 @@ export default function ConsultantsPage() {
                       c.listing ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-muted"
                     }`}
                   >
-                    {c.listing ? "E'lon joylangan" : "E'lon yo'q"}
+                    {c.listing ? "Xizmat joylangan" : "Xizmat yo'q"}
                   </span>
                 </div>
                 <p className="text-sm text-muted">
